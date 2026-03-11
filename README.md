@@ -34,18 +34,17 @@ Advisory Logic: Linking high-risk regression scores to automated retrieval of pa
 
 ## Repository Structure (For Now)
 
-│   README.md
-│   requirements.txt
+```text
+Healthcare_Advisory_System/
+├── api/
+├── models/
+│   ├── cnn_vision_v1.pth   
 │   
-├───api 
-├───dashboard
-├───data
-├───models
-│       cnn_vision_v1.pth
-│
-└───src
-    └───vision_module
-            train_cnn.ipynb
+├── src/
+│   └── vision_module/    # Research & Training notebooks
+|         |--train_cnn.ipynb
+└── requirements.txt      
+```
 
 ## 🛠️ Update: Phase 2 - Model Optimization & API Architecture
 **Commit Date:** March 11, 2026
@@ -102,8 +101,10 @@ Healthcare_Advisory_System/
 │   ├── utils.py          # Image preprocessing utilities
 │   └── regression.py     # Severity Index math logic
 ├── models/
-│   ├── best_vision.pth   # Best found PyTorch weights
-│   └── vision_final.onnx # 44MB Production-ready model
+│   ├── cnn_vision_v1.pth   # Best found PyTorch weights
+│   └── vision_prodcution_v1.onnx # 44MB Production-ready model
 ├── src/
 │   └── vision_module/    # Research & Training notebooks
+|        |--train_cnn.ipynb
 └── requirements.txt      # Updated with FastAPI & ONNX Runtime
+```
