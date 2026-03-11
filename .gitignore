@@ -1,0 +1,23 @@
+# --- Python / Environment ---
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+
+# --- Deep Learning Models (Large Files) ---
+# We exclude these to keep the repo size small. 
+# Weights should be stored in cloud storage or LFS.
+*.pth
+*.onnx
+*.weights
+*.h5
+
+# --- Data & Notebooks ---
+data/
+.ipynb_checkpoints/
+*.log
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
