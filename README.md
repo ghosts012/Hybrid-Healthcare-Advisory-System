@@ -53,13 +53,13 @@ Healthcare_Advisory_System/
 ### 🚀 Key Technical Milestones
 
 #### 1. Transition to Hybrid Inference Architecture
-We have successfully implemented the first two layers of our three-tier integration:
+I have successfully implemented the first two layers of our three-tier integration:
 * **CNN Layer:** Feature extraction using ResNet-18 (MedMNIST).
 * **Regression Layer:** A stochastic probability mapping that converts raw CNN logits into a **Clinical Severity Index (0-100%)**.
 * **Next:** This index will serve as the primary trigger for the RAG-based Advisory System.
 
 #### 2. Validation-Driven Checkpointing
-To resolve issues with training variance, we moved away from static epoch-saving to a **Best-Model Checkpoint** strategy. 
+To resolve issues with training variance, I moved away from static epoch-saving to a **Best-Model Checkpoint** strategy. 
 * **The Problem:** Standard seeding was inconsistent due to non-deterministic CUDA atomic operations on the T4 GPU.
 * **The Solution:** Implemented a stratified validation split (80/20) and a copy-on-improvement protocol. The model now only saves weights when a new global maximum in validation accuracy is achieved.
 
@@ -69,7 +69,7 @@ Successfully resolved the "Hollow Export" issue (0.08 MB files) by bypassing the
 * **Opset Alignment:** Standardized on Opset 18 to prevent version converter crashes.
 
 ### 4. Backend Implementation: FastAPI Service Layer
-We transitioned from standalone script execution to a dedicated Backend Service architecture.
+I transitioned from standalone script execution to a dedicated Backend Service architecture.
 
 * Framework: FastAPI (Asynchronous Python Framework).
 
@@ -115,7 +115,7 @@ Focus: Retrieval-Augmented Generation, Bias Mitigation, and LLM Orchestration
 
 ### Key Technical Milestones
 * Clinical RAG Architecture (The "Advisory" Layer)
-We have successfully implemented the final tier of the hybrid system, transforming raw numerical data into structured clinical reports.
+I have successfully implemented the final tier of the hybrid system, transforming raw numerical data into structured clinical reports.
 
 * Vector Knowledge Base: Developed a local knowledge store using FAISS (Facebook AI Similarity Search). The system indexes clinical guidelines from specialized PDF literature to ensure all advice is grounded in peer-reviewed protocols.
 
@@ -124,11 +124,11 @@ We have successfully implemented the final tier of the hybrid system, transformi
 * LLM Orchestration: Integrated the Google Gen AI SDK (v1) to leverage Gemini 2.0 Flash. The LLM acts as a "Medical Advisory Assistant," synthesizing the vision model's output and the retrieved clinical context into a professional Markdown report.
 
 * Bias Mitigation & Data Engineering
-During testing, the model exhibited a high False Positive rate (95% severity for healthy lungs). We resolved this through a two-pronged strategy:
+During testing, the model exhibited a high False Positive rate (95% severity for healthy lungs). I resolved this through a two-pronged strategy:
 
-* Balanced Undersampling: Identified a class imbalance in the primary dataset (3:1 ratio). We re-engineered the training pipeline using a Balanced Subset strategy, achieving a 50/50 split between "Normal" and "Pneumonia" cases.
+* Balanced Undersampling: Identified a class imbalance in the primary dataset (3:1 ratio). I re-engineered the training pipeline using a Balanced Subset strategy, achieving a 50/50 split between "Normal" and "Pneumonia" cases.
 
-* Input Distribution Calibration: Discovered a "Distribution Shift" between the training environment and the API. We synchronized the ImageNet Normalization (Mean/Std) constants across both train_cnn.ipynb and api/utils.py.
+* Input Distribution Calibration: Discovered a "Distribution Shift" between the training environment and the API. I synchronized the ImageNet Normalization (Mean/Std) constants across both train_cnn.ipynb and api/utils.py.
 
 **Result: False Positive scores on healthy images dropped from 95% to <18%, significantly increasing diagnostic specificity.**
 
@@ -140,6 +140,7 @@ Vision (ONNX) → Severity Index → FAISS Retrieval → Gemini Synthesis → Fi
 ![alt text](<Screenshot (304).png>)
 Updated Project Structure
 
+```text
 Healthcare_Advisory_System/
 ├── .env                  # API_KEY storage (v1 SDK)
 ├── api/
@@ -164,3 +165,4 @@ Healthcare_Advisory_System/
 |    ├── vision_module/        
 │       ├── train_cnn.ipynb        
 └── requirements.txt      # Added google-genai, faiss-cpu, langchain
+```
