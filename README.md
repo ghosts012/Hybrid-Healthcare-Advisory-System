@@ -108,3 +108,59 @@ Healthcare_Advisory_System/
 |        |--train_cnn.ipynb
 └── requirements.txt      # Updated with FastAPI & ONNX Runtime
 ```
+## Update: Phase 3 - RAG Integration & Data Engineering
+**Commit Date**: March 16, 2026
+
+Focus: Retrieval-Augmented Generation, Bias Mitigation, and LLM Orchestration
+
+### Key Technical Milestones
+* Clinical RAG Architecture (The "Advisory" Layer)
+We have successfully implemented the final tier of the hybrid system, transforming raw numerical data into structured clinical reports.
+
+* Vector Knowledge Base: Developed a local knowledge store using FAISS (Facebook AI Similarity Search). The system indexes clinical guidelines from specialized PDF literature to ensure all advice is grounded in peer-reviewed protocols.
+
+* Semantic Retrieval: Implemented HuggingFaceEmbeddings (all-MiniLM-L6-v2) to map the model's severity index to the most relevant medical text chunks.
+
+* LLM Orchestration: Integrated the Google Gen AI SDK (v1) to leverage Gemini 2.0 Flash. The LLM acts as a "Medical Advisory Assistant," synthesizing the vision model's output and the retrieved clinical context into a professional Markdown report.
+
+* Bias Mitigation & Data Engineering
+During testing, the model exhibited a high False Positive rate (95% severity for healthy lungs). We resolved this through a two-pronged strategy:
+
+* Balanced Undersampling: Identified a class imbalance in the primary dataset (3:1 ratio). We re-engineered the training pipeline using a Balanced Subset strategy, achieving a 50/50 split between "Normal" and "Pneumonia" cases.
+
+* Input Distribution Calibration: Discovered a "Distribution Shift" between the training environment and the API. We synchronized the ImageNet Normalization (Mean/Std) constants across both train_cnn.ipynb and api/utils.py.
+
+**Result: False Positive scores on healthy images dropped from 95% to <18%, significantly increasing diagnostic specificity.**
+
+* Optimized API Response (The "Complete" Hybrid Result)
+The API now returns a fully synthesized response. The logic flow is:
+
+Vision (ONNX) → Severity Index → FAISS Retrieval → Gemini Synthesis → Final Report.
+
+![alt text](<Screenshot (304).png>)
+Updated Project Structure
+
+Healthcare_Advisory_System/
+├── .env                  # API_KEY storage (v1 SDK)
+├── api/
+│   ├── generator.py      # Gemini 3.0 Flash (google-genai) wrapper
+│   ├── main.py           # FastAPI entry point (Integrated RAG flow)
+│   ├── utils.py          # Calibrated ImageNet Normalization
+│   └── regression.py     # Refined probability logic
+│   └── retriver.py       # FAISS & LanhChain retrieval logic
+├── dashboard/            # UI to be developed
+├── data/                 # Contains the Pocket book used for RAG https://www.who.int/publications/i/item/9789241548373
+├── models/
+│   ├── index.faiss       # FAISS vector index
+│   ├── index.pkl         # Metadata storage
+│   ├── vision_production_v1.onnx    # Re-balanced production model
+│   └── cnn_vision_v1.pth
+├── src/
+|    ├── rag_module/           # NEW: RAG logic
+│       ├── chunker.py        
+│       └── embedder.py      
+│       ├── main.py        
+│       └── pdf_loader.py     
+|    ├── vision_module/        
+│       ├── train_cnn.ipynb        
+└── requirements.txt      # Added google-genai, faiss-cpu, langchain

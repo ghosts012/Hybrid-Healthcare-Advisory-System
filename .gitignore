@@ -1,23 +1,37 @@
 # --- Python / Environment ---
-venv/
-.venv/
-env/
 __pycache__/
 *.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
 
-# --- Deep Learning Models (Large Files) ---
-# We exclude these to keep the repo size small. 
-# Weights should be stored in cloud storage or LFS.
-*.pth
-*.onnx
-*.weights
-*.h5
+# --- Model Artifacts (Large Files) ---
+# We ignore the heavy .pth and .onnx files to keep the repo lightweight.
+# Note: You should host these on a cloud drive for your dissertation examiners.
+models/*.pth
+models/*.onnx
+models/*.bin
 
-# --- Data & Notebooks ---
-data/
-.ipynb_checkpoints/
-*.log
+# --- RAG & Vector Database ---
+# FAISS indices and metadata pickles are local artifacts.
+rag_module/faiss_index/
+models/*.faiss
+models/*.pkl
+
+# --- Notebooks & Research ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
 
 # --- OS Specific ---
 .DS_Store
 Thumbs.db
+
+# --- Logs & Temp ---
+*.log
+api/temp/*
+
+# Clinical source documents
+*.pdf
+data/*.pdf
