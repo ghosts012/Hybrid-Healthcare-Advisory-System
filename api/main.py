@@ -1,10 +1,11 @@
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import onnxruntime as ort
 
 # Your custom modules
-from api.utils import process_xray
+from api.utils import process_xray, simple_xray_validator
 from api.regression import calculate_severity
 from api.retriever import PneumoniaRetriever
 from api.generator import MedicalReportGenerator
@@ -13,6 +14,17 @@ from api.generator import MedicalReportGenerator
 load_dotenv()
 
 app = FastAPI(title="Healthcare Advisory Vision API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Initialize Models and RAG once at startup ---
 try:
@@ -40,6 +52,11 @@ async def predict_severity(file: UploadFile = File(...)):
 
     # 1. Read and Preprocess X-ray
     content = await file.read()
+    if not simple_xray_validator(content):
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded image failed chest X-ray validation. Please upload a frontal chest X-ray image (PNG/JPG).",
+        )
     input_tensor = process_xray(content)
 
     # 2. Run Vision Inference (ONNX)

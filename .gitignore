@@ -35,3 +35,14 @@ api/temp/*
 # Clinical source documents
 *.pdf
 data/*.pdf
+
+# --- Node / Frontend (dashboard) ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/

@@ -10,7 +10,7 @@ Unlike traditional local setups, this system utilizes a Hybrid Development Archi
 
 * Synchronization: Leverages a custom binary stream (Base64) and remote file system mapping to synchronize model artifacts between the cloud runtime and the local project repository.
 
-## Vision Intelligence Module (In-Progress)
+## Vision Intelligence Module
 The system's core is a ResNet-18 architecture fine-tuned for the PneumoniaMNIST (MedMNIST) dataset.
 
 ### Technical Challenges & Niche Solutions
@@ -18,19 +18,11 @@ During implementation, several non-trivial environment constraints were addresse
 
 * **Remote-to-Local Serialization**: Encountered "ephemeral storage" limitations where standard files.download() triggers were intercepted by the VS Code sandbox. Resolved by implementing a Base64 binary data stream to force-download serialized weights.
 
-## Roadmap & Next Steps
-1. Model Serialization & Optimization (ONNX)
-Moving the raw .pth state dictionary into the ONNX (Open Neural Network Exchange) format using Opset 18. This will decouple the project from the multi-gigabyte PyTorch dependency, allowing for lightweight local CPU inference.
-
-2. Clinical Risk Analytics (Regression Layer)
-Implementation of a Probabilistic Risk Scorer. This module will process the Softmax outputs from the Vision module through a regression function to calculate a Clinical Severity Index (0-100%), providing more granular data than binary classification.
-
-3. Medical RAG Module (Retreival-Augmented Generation)
-Development of a localized medical knowledge base.
-
-Vector Database: Utilizing FAISS for indexing clinical protocols.
-
-Advisory Logic: Linking high-risk regression scores to automated retrieval of patient-care guidelines.
+## Roadmap (Completed)
+1. **Model Serialization & Optimization (ONNX)** — Production ONNX export (Opset 18) for lightweight local CPU inference via ONNX Runtime.
+2. **Clinical Risk Analytics (Regression Layer)** — Softmax-based Clinical Severity Index (0–100%).
+3. **Medical RAG Module** — FAISS + Gemini synthesis of grounded clinical advisories.
+4. **Clinical Dashboard** — React UI for upload, severity visualization, and Markdown advisory rendering (Phase 4).
 
 ## Repository Structure (For Now)
 
@@ -65,7 +57,7 @@ To resolve issues with training variance, I moved away from static epoch-saving 
 
 #### 3. Optimized ONNX Serialization
 Successfully resolved the "Hollow Export" issue (0.08 MB files) by bypassing the TorchDynamo engine in favor of a **Legacy Trace Export**.
-* **Optimization:** The final production model (`vision_production.onnx`) is now **44.7 MB**, ensuring all weights are baked into the computational graph.
+* **Optimization:** The final production model (`vision_production_v1.onnx`) is now **44.7 MB**, ensuring all weights are baked into the computational graph.
 * **Opset Alignment:** Standardized on Opset 18 to prevent version converter crashes.
 
 ### 4. Backend Implementation: FastAPI Service Layer
@@ -80,6 +72,7 @@ I transitioned from standalone script execution to a dedicated Backend Service a
 5. Sample API Output (The Hybrid Result)
 The following JSON payload demonstrates the integration of the CNN Features and the Regression Mapping. This response serves as the input for the upcoming RAG module.
 
+```json
 {
     "filename": "pneumonia_yes.jpeg",
     "clinical_metrics": {
@@ -89,6 +82,7 @@ The following JSON payload demonstrates the integration of the CNN Features and 
     },
     "recommendation": "Consult Radiologist immediately"
 }
+```
 
 ---
 
@@ -101,13 +95,14 @@ Healthcare_Advisory_System/
 │   ├── utils.py          # Image preprocessing utilities
 │   └── regression.py     # Severity Index math logic
 ├── models/
-│   ├── cnn_vision_v1.pth   # Best found PyTorch weights
-│   └── vision_prodcution_v1.onnx # 44MB Production-ready model
+│   ├── cnn_vision_v1.pth          # Best found PyTorch weights
+│   └── vision_production_v1.onnx  # 44MB Production-ready model
 ├── src/
 │   └── vision_module/    # Research & Training notebooks
 |        |--train_cnn.ipynb
 └── requirements.txt      # Updated with FastAPI & ONNX Runtime
 ```
+
 ## Update: Phase 3 - RAG Integration & Data Engineering
 **Commit Date**: March 16, 2026
 
@@ -121,14 +116,14 @@ I have successfully implemented the final tier of the hybrid system, transformin
 
 * Semantic Retrieval: Implemented HuggingFaceEmbeddings (all-MiniLM-L6-v2) to map the model's severity index to the most relevant medical text chunks.
 
-* LLM Orchestration: Integrated the Google Gen AI SDK (v1) to leverage Gemini 2.0 Flash. The LLM acts as a "Medical Advisory Assistant," synthesizing the vision model's output and the retrieved clinical context into a professional Markdown report.
+* LLM Orchestration: Integrated the Google Gen AI SDK (`google-genai`) to synthesize vision model output and retrieved clinical context into a professional Markdown report. Current model ID in `api/generator.py`: `gemini-3-flash-preview`.
 
 * Bias Mitigation & Data Engineering
 During testing, the model exhibited a high False Positive rate (95% severity for healthy lungs). I resolved this through a two-pronged strategy:
 
 * Balanced Undersampling: Identified a class imbalance in the primary dataset (3:1 ratio). I re-engineered the training pipeline using a Balanced Subset strategy, achieving a 50/50 split between "Normal" and "Pneumonia" cases.
 
-* Input Distribution Calibration: Discovered a "Distribution Shift" between the training environment and the API. I synchronized the ImageNet Normalization (Mean/Std) constants across both train_cnn.ipynb and api/utils.py.
+* Input Distribution Calibration: Discovered a "Distribution Shift" between the training environment and the API. I synchronized the ImageNet Normalization (Mean/Std) constants across both `train_cnn.ipynb` and `api/utils.py`.
 
 **Result: False Positive scores on healthy images dropped from 95% to <18%, significantly increasing diagnostic specificity.**
 
@@ -137,32 +132,114 @@ The API now returns a fully synthesized response. The logic flow is:
 
 Vision (ONNX) → Severity Index → FAISS Retrieval → Gemini Synthesis → Final Report.
 
-![alt text](<Screenshot (304).png>)
-Updated Project Structure
+```json
+{
+  "filename": "xray.png",
+  "clinical_metrics": {
+    "pneumonia_probability": "79.4%",
+    "severity_index": 79.4,
+    "status": "High Risk / Critical"
+  },
+  "rag_advisory": "## Clinical Advisory\n...",
+  "disclaimer": "This is an AI-generated advisory based on clinical guidelines. Consult a radiologist."
+}
+```
+
+### Updated Project Structure (Phase 3)
 
 ```text
 Healthcare_Advisory_System/
-├── .env                  # API_KEY storage (v1 SDK)
+├── .env                  # API_KEY storage (gitignored)
 ├── api/
-│   ├── generator.py      # Gemini 3.0 Flash (google-genai) wrapper
+│   ├── generator.py      # Gemini wrapper (google-genai)
 │   ├── main.py           # FastAPI entry point (Integrated RAG flow)
 │   ├── utils.py          # Calibrated ImageNet Normalization
-│   └── regression.py     # Refined probability logic
-│   └── retriver.py       # FAISS & LanhChain retrieval logic
-├── dashboard/            # UI to be developed
-├── data/                 # Contains the Pocket book used for RAG https://www.who.int/publications/i/item/9789241548373
+│   ├── regression.py     # Severity Index math logic
+│   └── retriever.py      # FAISS & LangChain retrieval logic
+├── dashboard/            # Planned in Phase 3; implemented in Phase 4
+├── data/                 # WHO clinical PDF used for RAG (gitignored)
 ├── models/
 │   ├── index.faiss       # FAISS vector index
 │   ├── index.pkl         # Metadata storage
 │   ├── vision_production_v1.onnx    # Re-balanced production model
 │   └── cnn_vision_v1.pth
 ├── src/
-|    ├── rag_module/           # NEW: RAG logic
-│       ├── chunker.py        
-│       └── embedder.py      
-│       ├── main.py        
-│       └── pdf_loader.py     
-|    ├── vision_module/        
-│       ├── train_cnn.ipynb        
-└── requirements.txt      # Added google-genai, faiss-cpu, langchain
+│   ├── rag_module/           # RAG indexing pipeline
+│   │   ├── chunker.py
+│   │   ├── embedder.py
+│   │   ├── main.py
+│   │   └── pdf_loader.py
+│   └── vision_module/
+│       └── train_cnn.ipynb
+└── requirements.txt      # Added google-genai, faiss-cpu, langchain*
+```
+
+---
+
+## Update: Phase 4 - Clinical Dashboard, Input Guardrails & Attribution
+**Commit Date:** August 2, 2026  
+**Focus:** Clinician-facing UI, API hardening, Markdown/math rendering, and WHO licence compliance
+
+### Key Technical Milestones
+
+#### 1. React Clinical Dashboard (`dashboard/`)
+Shipped a Vite + React + TypeScript + Tailwind UI that talks to the FastAPI backend.
+
+* **Upload flow:** Drag/drop or browse PNG/JPG chest X-rays → `POST /predict/severity`
+* **Clinical view:** Severity Index gauge (0–100) with risk coloring, status badge, and live X-ray preview
+* **Advisory rendering:** `react-markdown` + `remark-gfm` for GFM; `remark-math` + `rehype-katex` + KaTeX so clinical thresholds/symbols render correctly
+* **Config:** single root `.env` (see `.env.example`) — FastAPI reads `API_KEY`; Vite loads the same file via `envDir` for `VITE_API_BASE_URL` (default `http://127.0.0.1:8000`)
+
+#### 2. API Hardening for Frontend Integration
+* **CORS:** Allowed `http://localhost:5173` and `http://127.0.0.1:5173` for local dashboard development (`api/main.py`)
+* **Chest X-ray gate:** `simple_xray_validator` in `api/utils.py` rejects non-X-ray / overly colorful images before ONNX inference (channel saturation + intensity/ROI heuristics)
+* **Response contract** used by the UI matches the Phase 3 payload (`rag_advisory` + `disclaimer`)
+
+#### 3. WHO Guideline Attribution (CC BY-NC-SA 3.0 IGO)
+RAG grounding uses WHO *Guideline on management of pneumonia and diarrhoea in children up to 10 years of age* (ISBN 9789240103412). Local artifact path: `data/medical_reference_who.pdf` (gitignored; not redistributed by the app).
+
+* UI shows © World Health Organization 2025, title, licence link (**CC BY-NC-SA 3.0 IGO**), source URL, and **accessed 15 March 2026**
+* Source: https://www.who.int/publications/i/item/9789240103412
+* Licence: https://creativecommons.org/licenses/by-nc-sa/3.0/igo/
+
+#### 4. LLM Note
+Report synthesis uses the Google Gen AI SDK with model `gemini-3-flash-preview` (`api/generator.py`).
+
+### How to Run (Local Hybrid Stack)
+
+```bash
+# Backend (repo root, venv active; requires .env with API_KEY and local models/)
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+
+# Frontend
+cd dashboard
+npm install
+npm run dev
+```
+
+* Dashboard: http://127.0.0.1:5173  
+* API docs: http://127.0.0.1:8000/docs  
+
+### Updated Project Structure (Phase 4)
+
+```text
+Hybrid-Healthcare-Advisory-System/
+├── .env                         # API_KEY (gitignored)
+├── api/
+│   ├── main.py                  # FastAPI + CORS + X-ray validation + RAG flow
+│   ├── utils.py                 # ImageNet norm + simple_xray_validator
+│   ├── regression.py
+│   ├── retriever.py             # FAISS retrieval
+│   └── generator.py             # Gemini report synthesis
+├── dashboard/                   # React clinical UI
+│   ├── src/App.tsx              # Upload, gauge, Markdown+KaTeX advisory, WHO citation
+│   ├── src/main.tsx
+│   └── package.json
+├── .env.example                 # API_KEY + VITE_API_BASE_URL (copy to .env)
+├── data/                        # WHO PDF (gitignored)
+├── models/                      # ONNX + FAISS artifacts (gitignored binaries)
+├── src/
+│   ├── rag_module/
+│   └── vision_module/
+└── requirements.txt
 ```
